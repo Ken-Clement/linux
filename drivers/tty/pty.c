@@ -466,6 +466,14 @@ static void pty_remove(struct tty_driver *driver, struct tty_struct *tty)
 		pair->driver->ttys[pair->index] = NULL;
 }
 
+#ifdef CONFIG_PTY_IOXM
+static int pty_ioxm(struct tty_struct *tty,
+		    unsigned int cmd, unsigned long arg)
+{
+	return -ENOIOCTLCMD;
+}
+#endif
+
 static int pty_bsd_ioctl(struct tty_struct *tty,
 			 unsigned int cmd, unsigned long arg)
 {
@@ -483,7 +491,12 @@ static int pty_bsd_ioctl(struct tty_struct *tty,
 	case TIOCGPTN: /* TTY returns ENOTTY, but glibc expects EINVAL here */
 		return -EINVAL;
 	}
+	
+#ifdef CONFIG_PTY_IOXM
+	return pty_ioxm(tty, cmd, (int __user *)arg);
+#else
 	return -ENOIOCTLCMD;
+#endif
 }
 
 static int legacy_count = CONFIG_LEGACY_PTY_COUNT;
@@ -611,7 +624,11 @@ static int pty_unix98_ioctl(struct tty_struct *tty,
 		return pty_signal(tty, (int) arg);
 	}
 
+#ifdef CONFIG_PTY_IOXM
+	return pty_ioxm(tty, cmd, (int __user *)arg);
+#else
 	return -ENOIOCTLCMD;
+#endif
 }
 
 /**
